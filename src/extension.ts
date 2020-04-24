@@ -1,11 +1,20 @@
 import * as vscode from "vscode";
 import * as _ from "lodash";
 import * as mkdirp from "mkdirp";
-import * as changeCase from "change-case";
-import { existsSync, lstatSync, writeFile, readFile, readFileSync } from "fs";
+
+import {
+  existsSync,
+  lstatSync,
+  writeFile,
+  readFile,
+  readFileSync,
+  mkdir,
+} from "fs";
 import { getHiveHelperPath } from "./utils/get-root-path";
 import { getUpdatedFile } from "./utils/get-updated-file";
 import { getRegisterAdaptersTemplate } from "./templates/register-adapters";
+
+import { getClasses } from "./utils/dart";
 
 import {
   commands,
@@ -17,6 +26,7 @@ import {
   window,
 } from "vscode";
 
+//todo: open boxes should be made an instance with "open all boxes" & "open specific box" methods
 export function activate(context: vscode.ExtensionContext) {
   console.log(
     'Congratulations, your extension "hive-object-converter" is now active!'
@@ -25,6 +35,13 @@ export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand(
     "hive-object-converter.helloWorld",
     async (uri: Uri) => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return; // No open text editor
+      }
+      const classes = await getClasses(editor);
+      console.log(classes);
+
       const extendHiveObject =
         (await promptForExtendHiveObject()) ===
         "Yes, extend class with HiveObject";
@@ -47,15 +64,11 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // TODO: handle the error that is not being handled
-      try {
-        await generateHiveHelper(hiveHelperDirectory, hiveObjectDirectory);
-      } catch (error) {
-        window.showErrorMessage(
-          `Error:
-        ${error instanceof Error ? error.message : JSON.stringify(error)}`
-        );
-      }
+      await generateHiveHelper(
+        hiveHelperDirectory,
+        hiveObjectDirectory,
+        classes[0].className
+      );
 
       window.showInformationMessage(`Successfully Generated helper`);
       window.showInformationMessage(`Hello World from Hive Object Converter!`);
@@ -85,7 +98,8 @@ function promptForExtendHiveObject(): Thenable<string | undefined> {
 
 async function generateHiveHelper(
   hiveHelperDirectory: string,
-  importDirectory: string
+  importDirectory: string,
+  adapterName: string
 ) {
   if (!existsSync(hiveHelperDirectory)) {
     await createDirectory(hiveHelperDirectory);
@@ -95,14 +109,19 @@ async function generateHiveHelper(
     createRegisterAdapterTemplate(
       hiveHelperDirectory,
       importDirectory,
-      "TestThisOut"
+      adapterName
     ),
   ]);
 }
 
 function createDirectory(targetDirectory: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    mkdirp(targetDirectory);
+    mkdir(targetDirectory, (error: any) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve();
+    });
   });
 }
 

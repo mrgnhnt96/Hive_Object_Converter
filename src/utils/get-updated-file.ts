@@ -11,7 +11,7 @@ export function getUpdatedFile(
   let adapterString = getAdapter(adapterName);
 
   if (file.includes(adapterString)) {
-    return;
+    return file;
   }
 
   let updatedFile = file.replace(

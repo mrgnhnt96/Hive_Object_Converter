@@ -58,7 +58,6 @@
     "change-case": "^4.1.1",
     "fs": "0.0.1-security",
     "lodash": "^4.17.15",
-    "mkdir": "0.0.2",
-    "mkdirp": "^1.0.4"
+    "mkdir": "0.0.2"
   }
 }

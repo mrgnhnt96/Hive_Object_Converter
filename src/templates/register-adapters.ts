@@ -12,8 +12,8 @@ export function getRegisterAdaptersTemplate(
   return `import 'package:hive/hive.dart';
 ${packageImport}
 
-  void registerAdapters() {
-    ${adapter}
-  }
+void registerAdapters() {
+  ${adapter}
+}
 `;
 }
