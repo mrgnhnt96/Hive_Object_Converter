@@ -14,7 +14,13 @@ import { getHiveHelperPath } from "./utils/get-root-path";
 import { getUpdatedFile } from "./utils/get-updated-file";
 import { getRegisterAdaptersTemplate } from "./templates/register-adapters";
 
-import { getClasses } from "./utils/dart";
+import {
+  getClasses,
+  getClassesString,
+  reorderClass,
+  isComment,
+  DartClass,
+} from "./utils/dart";
 
 import {
   commands,
@@ -40,7 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
         return; // No open text editor
       }
       const classes = await getClasses(editor);
-      console.log(classes);
 
       const extendHiveObject =
         (await promptForExtendHiveObject()) ===
@@ -64,11 +69,18 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      let classesFileContent = readFileSync(hiveObjectDirectory, "utf8");
+
+      const classesNames = getClassesString(classesFileContent);
+      console.log(classesNames);
+
       await generateHiveHelper(
         hiveHelperDirectory,
         hiveObjectDirectory,
-        classes[0].className
+        classes
       );
+
+      await updateClass(classes, editor);
 
       window.showInformationMessage(`Successfully Generated helper`);
       window.showInformationMessage(`Hello World from Hive Object Converter!`);
@@ -77,6 +89,39 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable);
 }
+
+async function updateClass(
+  classes: Array<DartClass>,
+  editor: vscode.TextEditor
+) {
+  const memberOrdering = defaultOrdering;
+
+  for (let i = 0; i <= classes.length; i++) {
+    const dc = classes[i];
+
+    let lines = reorderClass(memberOrdering, dc);
+    const startPos = editor.document.positionAt(dc.openCurlyOffset);
+    const endPos = editor.document.positionAt(dc.closeCurlyOffset);
+
+    editor.selection = new vscode.Selection(startPos, endPos);
+
+    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+      editBuilder.replace(editor.selection, lines.join("\n"));
+    });
+  }
+}
+
+const defaultOrdering = [
+  "public-instance-variables", // this one is most important
+  "public-constructor",
+  "named-constructors",
+  "public-static-variables",
+  "private-static-variables",
+  "private-instance-variables",
+  "public-override-methods",
+  "public-other-methods",
+  "build-method",
+];
 
 export function deactivate() {}
 
@@ -99,19 +144,21 @@ function promptForExtendHiveObject(): Thenable<string | undefined> {
 async function generateHiveHelper(
   hiveHelperDirectory: string,
   importDirectory: string,
-  adapterName: string
+  classes: Array<DartClass>
 ) {
   if (!existsSync(hiveHelperDirectory)) {
     await createDirectory(hiveHelperDirectory);
   }
 
-  await Promise.all([
-    createRegisterAdapterTemplate(
-      hiveHelperDirectory,
-      importDirectory,
-      adapterName
-    ),
-  ]);
+  for (var i = 0; i <= classes.length - 1; i++) {
+    await Promise.all([
+      createRegisterAdapterTemplate(
+        hiveHelperDirectory,
+        importDirectory,
+        classes[i].className
+      ),
+    ]);
+  }
 }
 
 function createDirectory(targetDirectory: string): Promise<void> {
