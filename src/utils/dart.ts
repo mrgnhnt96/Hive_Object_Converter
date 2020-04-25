@@ -35,7 +35,7 @@ class DartLine {
     this.stripped = (m ? m[1] : this.line).trim();
     if (this.stripped.length === 0) {
       this.entityType =
-        line.indexOf("//") >= 0
+        line.indexOf("//") >= 0 || line.indexOf("///") >= 0
           ? EntityType.SingleLineComment
           : EntityType.BlankLine;
     }
@@ -49,7 +49,11 @@ class DartEntity {
   name: string = ""; // Used for sorting, but could be "".
 }
 
-class DartClass {
+async function getVariables(fileContents: string) {
+  //TODO: GET FILE CONTENTS STARTING WITH FUNCTION identifyOthers AND scanMethod
+}
+
+export class DartClass {
   editor: vscode.TextEditor;
   className: string;
   classOffset: number;
@@ -318,9 +322,9 @@ class DartClass {
       }
 
       // Preserve the comment lines leading up to the entity.
+
       for (let lineNum = i - 1; lineNum > 0; lineNum--) {
         if (isComment(this.lines[lineNum])) {
-          this.lines[lineNum].entityType = entity.entityType;
           entity.lines.unshift(this.lines[lineNum]);
           continue;
         }
@@ -426,8 +430,15 @@ class DartClass {
     let openBraceCount = 0;
     let openCurlyCount = 0;
     for (let i = 0; i < buf.length; i++) {
+      let nothin = buf[i];
+      if (lineCount === 1) {
+        result;
+      }
       if (openParenCount > 0) {
         for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
           switch (buf[i]) {
             case "(":
               openParenCount++;
@@ -441,11 +452,17 @@ class DartClass {
           }
           if (openParenCount === 0) {
             result.push(buf[i]);
+            if (lineCount === 0) {
+              leadingText = "";
+            }
             break;
           }
         }
       } else if (openBraceCount > 0) {
         for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
           switch (buf[i]) {
             case "[":
               openBraceCount++;
@@ -464,6 +481,9 @@ class DartClass {
         }
       } else if (openCurlyCount > 0) {
         for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
           switch (buf[i]) {
             case "{":
               openCurlyCount++;
@@ -481,6 +501,9 @@ class DartClass {
           }
         }
       } else {
+        if (lineCount === 1) {
+          result;
+        }
         switch (buf[i]) {
           case "(":
             openParenCount++;
@@ -507,6 +530,9 @@ class DartClass {
             result.push(buf[i]);
             if (leadingText === "") {
               leadingText = buf.substring(0, i).trim();
+            }
+            if (result.join("") === "();") {
+              result = [];
             }
             return [result.join(""), lineCount, leadingText];
           case "=":
@@ -625,7 +651,7 @@ const findMatchingBracket = async (
   return result;
 };
 
-const isComment = (line: DartLine) => {
+export const isComment = (line: DartLine) => {
   return (
     line.entityType === EntityType.SingleLineComment ||
     line.entityType === EntityType.MultiLineComment
@@ -676,4 +702,143 @@ export const getClasses = async (editor: vscode.TextEditor) => {
     classes.push(dartClass);
   }
   return classes;
+};
+
+export const getClassesString = (fileContents: string) => {
+  let classes = new Array<string>();
+  const buf = fileContents;
+  while (true) {
+    let mm = matchClassRE.exec(buf);
+    if (!mm) {
+      break;
+    }
+    let className = mm[1];
+    classes.push(className);
+  }
+  return classes;
+};
+
+export const reorderClass = (
+  memberOrdering: Array<string>,
+  dc: DartClass
+): Array<string> => {
+  let lines = new Array<string>();
+  lines.push(dc.lines[0].line); // Curly brace.
+  let hiveFieldCount = 0;
+
+  let addEntity = (
+    entity?: DartEntity,
+    separateEntities?: boolean,
+    hiveField?: boolean
+  ) => {
+    // separateEntities default is true.
+    if (entity === undefined) {
+      return;
+    }
+
+    //this is where we should add the @HiveField(0)
+    entity.lines.forEach((line) => {
+      if (hiveField && !isComment(line)) {
+        line.line = `\t@HiveField(${hiveFieldCount++})\n${line.line}`;
+      }
+      lines.push(line.line);
+    });
+
+    if (separateEntities !== false || entity.lines.length > 1) {
+      if (lines.length > 0 && lines[lines.length - 1] !== "\n") {
+        lines.push("");
+      }
+    }
+  };
+
+  let addEntities = (
+    entities: Array<DartEntity>,
+    separateEntities?: boolean,
+    hiveField: boolean = false
+  ) => {
+    // separateEntities default is true.
+    if (entities.length === 0) {
+      return;
+    }
+
+    entities.forEach((e) => addEntity(e, separateEntities, hiveField));
+
+    if (
+      separateEntities === false &&
+      lines.length > 0 &&
+      lines[lines.length - 1] !== "\n"
+    ) {
+      lines.push("");
+    }
+  };
+
+  // dc.privateVariables.sort(sortFunc);
+  let sortFunc = (a: DartEntity, b: DartEntity) => a.name.localeCompare(b.name);
+
+  for (let order = 0; order < memberOrdering.length; order++) {
+    const el = memberOrdering[order];
+
+    switch (el) {
+      case "public-constructor": {
+        addEntity(dc.theConstructor);
+        break;
+      }
+      case "named-constructors": {
+        addEntities(dc.namedConstructors);
+        break;
+      }
+      case "public-static-variables": {
+        addEntities(dc.staticVariables, false);
+        break;
+      }
+      case "public-instance-variables": {
+        addEntities(dc.instanceVariables, false, true);
+        break;
+      }
+      case "private-static-variables": {
+        addEntities(dc.staticPrivateVariables, false);
+        break;
+      }
+      case "private-instance-variables": {
+        addEntities(dc.privateVariables, false);
+        break;
+      }
+      case "public-override-methods": {
+        // Strip a trailing blank line.
+        if (
+          lines.length > 2 &&
+          lines[lines.length - 1] === "" &&
+          lines[lines.length - 2] === ""
+        ) {
+          lines.pop();
+        }
+
+        dc.overrideMethods.sort(sortFunc);
+        addEntities(dc.overrideMethods);
+        break;
+      }
+      case "public-other-methods": {
+        addEntities(dc.otherMethods);
+
+        // Preserve random single-line and multi-line comments.
+        for (let i = 1; i < dc.lines.length; i++) {
+          let foundComment = false;
+          for (; i < dc.lines.length && isComment(dc.lines[i]); i++) {
+            lines.push(dc.lines[i].line);
+            foundComment = true;
+          }
+          if (foundComment) {
+            lines.push("");
+          }
+        }
+        break;
+      }
+      case "build-method": {
+        addEntity(dc.buildMethod);
+        break;
+      }
+    }
+  }
+
+  return lines;
 };
