@@ -49,8 +49,12 @@ class DartEntity {
   name: string = ""; // Used for sorting, but could be "".
 }
 
+async function getVariables(fileContents: string) {
+  //TODO: GET FILE CONTENTS STARTING WITH FUNCTION identifyOthers AND scanMethod
+}
+
 export class DartClass {
-  fileContents: string;
+  editor: vscode.TextEditor;
   className: string;
   classOffset: number;
   openCurlyOffset: number;
@@ -69,13 +73,13 @@ export class DartClass {
   buildMethod?: DartEntity = undefined;
 
   constructor(
-    fileContents: string,
+    editor: vscode.TextEditor,
     className: string,
     classOffset: number,
     openCurlyOffset: number,
     closeCurlyOffset: number
   ) {
-    this.fileContents = fileContents;
+    this.editor = editor;
     this.className = className;
     this.classOffset = classOffset;
     this.openCurlyOffset = openCurlyOffset;
@@ -113,6 +117,14 @@ export class DartClass {
     await this.identifyOthers();
 
     // this.lines.forEach((line, index) => console.log(`line #${index} type=${EntityType[line.entityType]}: ${line.line}`));
+  }
+
+  private genStripped(startLine: number): string {
+    let strippedLines = new Array<string>();
+    for (let i = startLine; i < this.lines.length; i++) {
+      strippedLines.push(this.lines[i].stripped);
+    }
+    return strippedLines.join("\n");
   }
 
   private identifyMultiLineComments() {
@@ -250,12 +262,9 @@ export class DartClass {
             );
             const absOpenCurlyOffset =
               this.openCurlyOffset + relOpenCurlyOffset;
-            const absCloseCurlyOffset = findMatchingBracketPosition(
-              this.fileContents,
-              absOpenCurlyOffset,
-              {
-                openCurlyCount: 1,
-              }
+            const absCloseCurlyOffset = await findMatchingBracket(
+              this.editor,
+              absOpenCurlyOffset
             );
             const relCloseCurlyOffset =
               absCloseCurlyOffset - this.openCurlyOffset;
@@ -301,30 +310,19 @@ export class DartClass {
   }
 
   private async identifyOthers() {
-    for (let i = 1; i < this.lines.length - 1; i++) {
-      let line = this.lines[i];
-
-      //removes any current Hive statements
-      while (line.stripped.includes("@Hive")) {
-        this.lines.splice(i, 1);
-        line = this.lines[i];
-      }
-
-      if (line.stripped === "" && line.entityType === EntityType.Unknown) {
-        line.entityType = EntityType.BlankLine;
-        continue;
-      }
-
+    for (let i = 1; i < this.lines.length; i++) {
+      const line = this.lines[i];
       if (line.entityType !== EntityType.Unknown) {
         continue;
       }
 
-      let entity = this.scanMethod(line.stripped, i);
+      let entity = await this.scanMethod(i);
       if (entity.entityType === EntityType.Unknown) {
         continue;
       }
 
       // Preserve the comment lines leading up to the entity.
+
       for (let lineNum = i - 1; lineNum > 0; lineNum--) {
         if (isComment(this.lines[lineNum])) {
           entity.lines.unshift(this.lines[lineNum]);
@@ -356,14 +354,14 @@ export class DartClass {
     }
   }
 
-  //TODO: IF CONTAINS @HIVE... REMOVE
-
-  private scanMethod(line: string, lineNum: number): DartEntity {
+  private scanMethod(lineNum: number): DartEntity {
     let entity = new DartEntity();
 
-    let result = this.findSequence(line);
+    let buf = this.genStripped(lineNum);
+    let result = this.findSequence(buf);
     let sequence = result[0];
-    let leadingText = result[1];
+    let lineCount = result[1];
+    let leadingText = result[2];
 
     const nameParts = leadingText.split(" ");
     let staticKeyword = false;
@@ -390,44 +388,17 @@ export class DartClass {
         break;
     }
 
-    if (sequence !== ";") {
-      entity.entityType = EntityType.OtherMethod;
-    }
-    if (leadingText === "") {
-      entity.entityType = EntityType.OtherMethod;
-    }
-
-    switch (leadingText) {
-      case "(":
+    switch (sequence) {
+      case "(){}":
         entity.entityType = EntityType.OtherMethod;
         break;
 
-      case ")": // function constructor
+      case "();": // Abstract method.
         entity.entityType = EntityType.OtherMethod;
         break;
 
-      case "})": // function constructor
+      case "=(){}":
         entity.entityType = EntityType.OtherMethod;
-        break;
-
-      case "{":
-        entity.entityType = EntityType.OtherMethod;
-        break;
-
-      case "}":
-        entity.entityType = EntityType.OtherMethod;
-        break;
-
-      case "[":
-        entity.entityType = EntityType.BlankLine;
-        break;
-
-      case "]":
-        entity.entityType = EntityType.BlankLine;
-        break;
-
-      case "":
-        entity.entityType = EntityType.BlankLine;
         break;
 
       default:
@@ -442,132 +413,145 @@ export class DartClass {
       entity.entityType = EntityType.OtherMethod;
     }
 
-    this.lines[lineNum].entityType = entity.entityType;
-    entity.lines.push(this.lines[lineNum]);
+    for (let i = 0; i <= lineCount; i++) {
+      this.lines[lineNum + i].entityType = entity.entityType;
+      entity.lines.push(this.lines[lineNum + i]);
+    }
 
     return entity;
   }
 
-  private findSequence(line: string): [string, string] {
+  private findSequence(buf: string): [string, number, string] {
     let result = new Array<string>();
 
     let leadingText = "";
+    let lineCount = 0;
     let openParenCount = 0;
     let openBraceCount = 0;
     let openCurlyCount = 0;
-    for (let i = 0; i < line.length; i++) {
-      let nothin = line[i];
-
+    for (let i = 0; i < buf.length; i++) {
+      let nothin = buf[i];
+      if (lineCount === 1) {
+        result;
+      }
       if (openParenCount > 0) {
-        for (; i < line.length; i++) {
-          switch (line[i]) {
+        for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
+          switch (buf[i]) {
             case "(":
               openParenCount++;
               break;
             case ")":
               openParenCount--;
               break;
+            case "\n":
+              lineCount++;
+              break;
           }
           if (openParenCount === 0) {
-            result.push(line[i]);
-            if (result.join("") === "()") {
+            result.push(buf[i]);
+            if (lineCount === 0) {
               leadingText = "";
-              result = [];
             }
             break;
           }
         }
       } else if (openBraceCount > 0) {
-        for (; i < line.length; i++) {
-          switch (line[i]) {
+        for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
+          switch (buf[i]) {
             case "[":
               openBraceCount++;
               break;
             case "]":
               openBraceCount--;
               break;
+            case "\n":
+              lineCount++;
+              break;
           }
           if (openBraceCount === 0) {
-            result.push(line[i]);
-            return [result.join(""), leadingText];
+            result.push(buf[i]);
+            return [result.join(""), lineCount, leadingText];
           }
         }
       } else if (openCurlyCount > 0) {
-        for (; i < line.length; i++) {
-          switch (line[i]) {
+        for (; i < buf.length; i++) {
+          if (lineCount === 1) {
+            result;
+          }
+          switch (buf[i]) {
             case "{":
               openCurlyCount++;
               break;
             case "}":
               openCurlyCount--;
               break;
+            case "\n":
+              lineCount++;
+              break;
           }
           if (openCurlyCount === 0) {
-            result.push(line[i]);
-            return [result.join(""), leadingText];
+            result.push(buf[i]);
+            return [result.join(""), lineCount, leadingText];
           }
         }
       } else {
-        switch (line[i]) {
+        if (lineCount === 1) {
+          result;
+        }
+        switch (buf[i]) {
           case "(":
             openParenCount++;
-            result.push(line[i]);
+            result.push(buf[i]);
             if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
-            }
-            break;
-          case ",":
-            result.push(line[i]);
-            if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
+              leadingText = buf.substring(0, i).trim();
             }
             break;
           case "[":
             openBraceCount++;
-            result.push(line[i]);
+            result.push(buf[i]);
             if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
+              leadingText = buf.substring(0, i).trim();
             }
             break;
           case "{":
             openCurlyCount++;
-            result.push(line[i]);
+            result.push(buf[i]);
             if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
+              leadingText = buf.substring(0, i).trim();
             }
             break;
           case ";":
-            result.push(line[i]);
+            result.push(buf[i]);
             if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
+              leadingText = buf.substring(0, i).trim();
             }
             if (result.join("") === "();") {
               result = [];
             }
-            return [result.join(""), leadingText];
-          case ":":
-            result.push(line[i]);
-            if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
-            }
-            if (result.join("") === "();") {
-              result = [];
-            }
-            return [result.join(""), leadingText];
+            return [result.join(""), lineCount, leadingText];
           case "=":
-            if (i < line.length - 1 && line[i + 1] === ">") {
+            if (i < buf.length - 1 && buf[i + 1] === ">") {
               result.push("=>");
             } else {
-              result.push(line[i]);
+              result.push(buf[i]);
             }
             if (leadingText === "") {
-              leadingText = line.substring(0, i).trim();
+              leadingText = buf.substring(0, i).trim();
             }
+            break;
+          case "\n":
+            lineCount++;
             break;
         }
       }
     }
-    return [result.join(""), leadingText];
+    return [result.join(""), lineCount, leadingText];
   }
 
   private async markMethod(
@@ -597,14 +581,16 @@ export class DartClass {
     );
 
     const absOpenParenOffset = this.openCurlyOffset + relOpenParenOffset;
-    const absCloseParenOffset = findMatchingBracketPosition(
-      this.fileContents,
-      absOpenParenOffset,
-      { openParenCount: 1 }
+    const absCloseParenOffset = await findMatchingBracket(
+      this.editor,
+      absOpenParenOffset
     );
     const relCloseParenOffset = absCloseParenOffset - this.openCurlyOffset;
-    let result = this.fullBuf[relCloseParenOffset];
-    assert.equal(result, ")", "Expected close parenthesis at relative offset");
+    assert.equal(
+      this.fullBuf[relCloseParenOffset],
+      ")",
+      "Expected close parenthesis at relative offset"
+    );
 
     const curlyDeltaOffset = this.fullBuf
       .substring(relCloseParenOffset)
@@ -623,10 +609,9 @@ export class DartClass {
       nextOffset = relCloseParenOffset + semicolonOffset;
     } else {
       const absOpenCurlyOffset = absCloseParenOffset + curlyDeltaOffset;
-      const absCloseCurlyOffset = findMatchingBracketPosition(
-        this.fileContents,
-        absOpenCurlyOffset,
-        { openCurlyCount: 1 }
+      const absCloseCurlyOffset = await findMatchingBracket(
+        this.editor,
+        absOpenCurlyOffset
       );
       nextOffset = absCloseCurlyOffset - this.openCurlyOffset;
     }
@@ -653,66 +638,18 @@ export class DartClass {
   }
 }
 
-function findMatchingBracketPosition(
-  buf: string,
-  startingPosition: number,
-  { openParenCount = 0, openBraceCount = 0, openCurlyCount = 0 }
-): number {
-  let result = 0;
-  for (let i = startingPosition + 1; i < buf.length; i++) {
-    let nothin = buf[i];
-    if (openParenCount > 0) {
-      for (; i < buf.length; i++) {
-        switch (buf[i]) {
-          case "(":
-            openParenCount++;
-            break;
-          case ")":
-            openParenCount--;
-            break;
-        }
-        if (openParenCount === 0) {
-          result = i;
-          return result;
-        }
-      }
-    } else if (openBraceCount > 0) {
-      for (; i < buf.length; i++) {
-        switch (buf[i]) {
-          case "[":
-            openBraceCount++;
-            break;
-          case "]":
-            openBraceCount--;
-            break;
-        }
-        if (openBraceCount === 0) {
-          result = i;
-          return result;
-        }
-      }
-    } else if (openCurlyCount > 0) {
-      for (; i < buf.length; i++) {
-        let nothin = buf[i];
-        switch (buf[i]) {
-          case "{":
-            openCurlyCount++;
-            break;
-          case "}":
-            openCurlyCount--;
-            break;
-        }
-        if (openCurlyCount === 0) {
-          result = i;
-          return result;
-        }
-      }
-    }
-  }
-  return 0;
-}
-
 const matchClassRE = /^(?:abstract\s+)?class\s+(\S+)\s*.*$/gm;
+
+const findMatchingBracket = async (
+  editor: vscode.TextEditor,
+  openParenOffset: number
+) => {
+  const position = editor.document.positionAt(openParenOffset);
+  editor.selection = new vscode.Selection(position, position);
+  await vscode.commands.executeCommand("editor.action.jumpToBracket");
+  const result = editor.document.offsetAt(editor.selection.active);
+  return result;
+};
 
 export const isComment = (line: DartLine) => {
   return (
@@ -727,9 +664,10 @@ const findOpenCurlyOffset = (buf: string, startOffset: number) => {
 };
 
 // export for testing only.
-export const getClasses = async (fileContents: string) => {
+export const getClasses = async (editor: vscode.TextEditor) => {
+  let document = editor.document;
   let classes = new Array<DartClass>();
-  const buf = fileContents;
+  const buf = document.getText();
   while (true) {
     let mm = matchClassRE.exec(buf);
     if (!mm) {
@@ -744,11 +682,7 @@ export const getClasses = async (fileContents: string) => {
       );
       return classes;
     }
-
-    let closeCurlyOffset = findMatchingBracketPosition(buf, openCurlyOffset, {
-      openCurlyCount: 1,
-    });
-
+    let closeCurlyOffset = await findMatchingBracket(editor, openCurlyOffset);
     if (closeCurlyOffset <= openCurlyOffset) {
       console.log(
         'expected "}" after "{" at offset ' + openCurlyOffset.toString()
@@ -756,16 +690,30 @@ export const getClasses = async (fileContents: string) => {
       return classes;
     }
     let dartClass = new DartClass(
-      fileContents,
+      editor,
       className,
       classOffset,
       openCurlyOffset,
       closeCurlyOffset
     );
     await dartClass.findFeatures(
-      buf.substring(openCurlyOffset, closeCurlyOffset + 1)
+      buf.substring(openCurlyOffset, closeCurlyOffset)
     );
     classes.push(dartClass);
+  }
+  return classes;
+};
+
+export const getClassesString = (fileContents: string) => {
+  let classes = new Array<string>();
+  const buf = fileContents;
+  while (true) {
+    let mm = matchClassRE.exec(buf);
+    if (!mm) {
+      break;
+    }
+    let className = mm[1];
+    classes.push(className);
   }
   return classes;
 };

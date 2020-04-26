@@ -1,12 +1,12 @@
 import { workspace } from "vscode";
-import { getPackageImport } from "../utils/get-package-import";
-import { getAdapter } from "../utils/get-adapter";
+import { getPackageImport } from "./get-package-import";
+import { getAdapter } from "./get-adapter";
 
-export function getUpdatedFile(
+export function getUpdatedAdapterFile(
   file: string,
   importDirectory: string,
   adapterName: string
-): string | undefined {
+): string {
   let importString = getPackageImport(importDirectory);
   let adapterString = getAdapter(adapterName);
 
@@ -17,16 +17,18 @@ export function getUpdatedFile(
   let updatedFile = file.replace(
     "}",
     `\t${adapterString}
-}`
+  }`
   );
 
-  updatedFile = updatedFile.replace(
-    ";\n\n",
-    `;
+  if (!file.includes(importString)) {
+    updatedFile = updatedFile.replace(
+      ";\n\n",
+      `;
 ${importString}
 
 `
-  );
+    );
+  }
 
   return updatedFile;
 }
