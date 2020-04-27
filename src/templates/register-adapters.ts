@@ -1,6 +1,5 @@
-import * as changeCase from "change-case";
-import { getPackageImport } from "../utils/get-package-import";
 import { getAdapter } from "../utils/get-adapter";
+import { getPackageImport } from "../utils/get-package-import";
 
 export function getRegisterAdaptersTemplate(
   importDirectory: string,

@@ -1,6 +1,5 @@
-import { workspace } from "vscode";
-import { getPackageImport } from "./get-package-import";
 import { getAdapter } from "./get-adapter";
+import { getPackageImport } from "./get-package-import";
 
 export function getUpdatedAdapterFile(
   file: string,

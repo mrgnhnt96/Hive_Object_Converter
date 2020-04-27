@@ -10,21 +10,32 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:hive-object-converter.helloWorld"
+    "onCommand:hive-object-converter.convert_to_hive",
+    "onCommand:hive-object-converter.get_generated_files"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "hive-object-converter.helloWorld",
-        "title": "Hello World"
+        "command": "hive-object-converter.convert_to_hive",
+        "title": "Convert To Hive"
+      },
+      {
+        "command": "hive-object-converter.get_generated_files",
+        "title": "Get Generated Files"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "hive-object-converter.helloWorld",
-          "group": "ahelloWorld@1",
+          "command": "hive-object-converter.convert_to_hive",
+          "group": "aconvert_to_hive@1",
+          "when": "resourceLangId == dart",
+          "alt": "alt+z"
+        },
+        {
+          "command": "hive-object-converter.get_generated_files",
+          "group": "aconvert_to_hive@1",
           "when": "resourceLangId == dart",
           "alt": "alt+z"
         }
@@ -56,6 +67,7 @@
   },
   "dependencies": {
     "change-case": "^4.1.1",
+    "child_process": "^1.0.2",
     "fs": "0.0.1-security",
     "lodash": "^4.17.15",
     "mkdir": "0.0.2"

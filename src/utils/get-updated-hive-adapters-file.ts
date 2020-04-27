@@ -1,7 +1,4 @@
-import { workspace } from "vscode";
-import { getPackageImport } from "./get-package-import";
-import { getAdapter } from "./get-adapter";
-import { DartClass, getClasses } from "./dart";
+import { DartClass } from "./dart";
 import * as changeCase from "change-case";
 
 //todo: add visual for depricated
@@ -26,7 +23,7 @@ export function getUpdatedHiveAdapterFile(
   for (var i = 0; i < existingVariables.length; i++) {
     let varName = changeCase.camelCase(existingVariables[i]);
     variables.push(
-      `\tfinal String ${varName} = '${existingVariables[i]}Adapter';`
+      `\tstatic const String ${varName} = '${existingVariables[i]}Adapter';`
     );
   }
 

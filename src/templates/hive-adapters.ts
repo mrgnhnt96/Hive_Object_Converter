@@ -5,7 +5,7 @@ import { DartClass } from "../utils/dart";
 
 export function getHiveAdapterTemplate(adapter: string): string {
   const casedDartClass = changeCase.camelCase(adapter);
-  const hiveAdapter = `\tfinal String ${casedDartClass} = '${adapter}Adapter';`;
+  const hiveAdapter = `\tstatic const String ${casedDartClass} = '${adapter}Adapter';`;
 
   return `class HiveAdapters {
 ${hiveAdapter}

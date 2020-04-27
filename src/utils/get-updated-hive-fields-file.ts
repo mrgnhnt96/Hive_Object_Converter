@@ -1,7 +1,5 @@
-import { workspace } from "vscode";
-import { getPackageImport } from "./get-package-import";
-import { getAdapter } from "./get-adapter";
-import { DartClass, getClasses } from "./dart";
+import * as changeCase from "change-case";
+import { DartClass } from "./dart";
 
 //todo: add visual for depricated types
 export function getUpdatedHiveFieldsFile(
@@ -33,7 +31,9 @@ export function getUpdatedHiveFieldsFile(
   let variables: Array<string> = [];
   for (var i = 0; i < existingVariables.length; i++) {
     let varName = existingVariables[i];
-    variables.push(`\tfinal int ${varName} = ${i};`);
+    let casedUpdateClass = changeCase.camelCase(varName);
+
+    variables.push(`\tstatic const int ${casedUpdateClass} = ${i};`);
   }
 
   return `class ${existingClass.className} {
