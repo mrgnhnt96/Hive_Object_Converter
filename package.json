@@ -1,8 +1,13 @@
 {
   "name": "hive-object-converter",
-  "displayName": "\"Hive Object Converter\"",
-  "description": "",
-  "version": "0.0.1",
+  "displayName": "Hive Object Converter",
+  "description": "Convert your class models into hive objects easily",
+  "publisher": "mrgnhnt96",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrgnhnt96/Hive_Object_Converter"
+  },
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.44.0"
   },
