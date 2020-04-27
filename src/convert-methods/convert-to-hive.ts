@@ -46,8 +46,7 @@ export async function convertToHive(uri: Uri) {
     extendHiveObject
   );
 
-  window.showInformationMessage(`Successfully Generated helper`);
-  window.showInformationMessage(`Hello World from Hive Object Converter!`);
+  window.showInformationMessage(`Successfully converted class to hive`);
 }
 
 function promptForExtendHiveObject(): Thenable<string | undefined> {

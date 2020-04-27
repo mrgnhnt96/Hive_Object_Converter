@@ -22,7 +22,7 @@
       },
       {
         "command": "hive-object-converter.get_generated_files",
-        "title": "Get Generated Files"
+        "title": "Get Hive Generated Files"
       }
     ],
     "menus": {
