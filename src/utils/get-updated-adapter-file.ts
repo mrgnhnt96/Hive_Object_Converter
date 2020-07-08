@@ -15,8 +15,7 @@ export function getUpdatedAdapterFile(
 
   let updatedFile = file.replace(
     "}",
-    `\t${adapterString}
-  }`
+    `\t${adapterString}\n}`
   );
 
   if (!file.includes(importString)) {

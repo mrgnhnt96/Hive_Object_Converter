@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync } from "fs-extra";
 import { DartClass } from "../utils/dart";
 import { createDirectory } from "../utils/create-directory";
 import { createRegisterAdapterTemplate } from "./create-register-adapter-template";

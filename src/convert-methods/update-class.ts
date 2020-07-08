@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs-extra";
 import { getPackageImport } from "../utils/get-package-import";
 import { getClasses, EntityType, DartClass } from "../utils/dart";
 import { getHiveTypesTemplate } from "../templates/hive-types";
@@ -15,6 +15,12 @@ export async function updateClass(
   extendHiveObject: boolean
 ) {
   let fileContents = "";
+
+  if (!classes || classes.length === 0) {
+    console.error('classes are undefined', classes);
+    return false;
+  }
+
   let originalFile = classes[0].fileContents;
   const hiveImport = "import 'package:hive/hive.dart';\n";
 
@@ -44,7 +50,7 @@ export async function updateClass(
     const hiveAdapterImportString = `${getPackageImport(hiveAdapterPath)}\n`;
 
     //get file name
-    const targetPathSplit = targetPath.split("/");
+    const targetPathSplit = targetPath.split(/[\\/]/);
     const targetFileName = targetPathSplit[
       targetPathSplit.length - 1
     ].substring(0, targetPathSplit[targetPathSplit.length - 1].length - 5);
@@ -111,14 +117,19 @@ export async function updateClass(
       const line = hiveClass.lines[i];
       //defaulted to nothing
       let hiveFieldString = "";
-      const hiveFieldImport = `{${hiveHelperDirectory}/fields/${classSnakeCasedName}_fields.dart`;
+
+      const hiveFieldImport = `${hiveHelperDirectory}/fields/${classSnakeCasedName}_fields.dart`;
       const hiveFieldImportString = `${getPackageImport(hiveFieldImport)}\n`;
 
       if (line.entityType === EntityType.InstanceVariable) {
         let lineSplit = line.line.split(" ");
         let fieldName = lineSplit[lineSplit.length - 1];
-        fieldName = fieldName.substring(0, fieldName.length - 1);
-        hiveFieldString = `\t@HiveField(${hiveClass.className}Fields.${fieldName})\n`;
+        // why do i need to trim it? => length does not return only the visible char, also \n!
+        let length = fieldName.trim().length - 1;
+
+
+        let fieldName_ = fieldName.slice(0, length);
+        hiveFieldString = `\t@HiveField(${hiveClass.className}Fields.${fieldName_})\n`;
       }
       convertedClass.push(`${hiveFieldString}${line.line}`);
 
@@ -133,7 +144,11 @@ export async function updateClass(
 
     let convertedClassString = convertedClass.join("\n");
     let beginningString = originalFile.substring(0, hiveClass.classOffset);
-    const beginningStringSplit = beginningString.split("\n");
+    let beginningStringSplit: string[] = [];
+
+    if (beginningString !== "") {
+      beginningStringSplit = beginningString.split("\n");
+    }
 
     //optimize so that it doesn't have to run every time
     for (var x = 0; x < beginningStringSplit.length; x++) {
@@ -147,11 +162,12 @@ export async function updateClass(
         beginningStringSplit.splice(x, 1);
       }
     }
+
     imports += beginningStringSplit.join("\n");
 
     let classString = `class ${hiveClass.className} ${
       extendHiveObject ? "extends HiveObject " : ""
-    }`;
+      }`;
     let endString = originalFile.substring(hiveClass.closeCurlyOffset + 1);
 
     // imports += "\n\n";
@@ -175,4 +191,5 @@ export async function updateClass(
   }
 
   await setFileData(targetPath, fileContents);
+  return true;
 }

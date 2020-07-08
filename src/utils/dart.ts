@@ -105,11 +105,15 @@ export class DartClass {
       }
     });
 
-    this.identifyMultiLineComments();
-    await this.identifyMainConstructor();
-    await this.identifyNamedConstructors();
-    await this.identifyOverrideMethods();
-    await this.identifyOthers();
+    try {
+      this.identifyMultiLineComments();
+      await this.identifyMainConstructor();
+      await this.identifyNamedConstructors();
+      await this.identifyOverrideMethods();
+      await this.identifyOthers();
+    } catch (e) {
+      console.error(e);
+    }
 
     // this.lines.forEach((line, index) => console.log(`line #${index} type=${EntityType[line.entityType]}: ${line.line}`));
   }
@@ -729,6 +733,8 @@ const findOpenCurlyOffset = (buf: string, startOffset: number) => {
 export const getClasses = async (fileContents: string) => {
   let classes = new Array<DartClass>();
   const buf = fileContents;
+
+
   while (true) {
     let mm = matchClassRE.exec(buf);
     if (!mm) {
@@ -754,6 +760,7 @@ export const getClasses = async (fileContents: string) => {
       );
       return classes;
     }
+
     let dartClass = new DartClass(
       fileContents,
       className,
@@ -761,9 +768,12 @@ export const getClasses = async (fileContents: string) => {
       openCurlyOffset,
       closeCurlyOffset
     );
-    await dartClass.findFeatures(
+
+    const err = await dartClass.findFeatures(
       buf.substring(openCurlyOffset, closeCurlyOffset + 1)
     );
+
+
     classes.push(dartClass);
   }
   return classes;
