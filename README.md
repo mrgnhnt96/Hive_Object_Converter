@@ -46,10 +46,13 @@ class MyComplexTodo extends HiveObject {
 This extension allows right click on a dart file and then choose between two options.
 1. `[Hive] Convert To Hive`
 2. `[Hive] Get Hive Generated Files`
+3. `[Hive] Convert *.model.dart in folder to Hive`
 
-The 1. will convert the class like in the example above. And the 2. command will start the build run command, to generate the `*.g.dart` file.
+The 1. will convert the class like in the example above. 
+The 2. command will start the build run command, to generate the `*.g.dart` file.
+The 3. command will appear, when right click on a folder.
 
-It is also possible to right click on a folder and this extension will convert all files in that folder into hive objects. 
+
 
 The extension will create subfolder `hive_helper` to store all the hive helpers: 
 1. Register the hive adapter
@@ -73,6 +76,7 @@ Specify the name of the modified version of the HiveObject. It defaults to HiveO
 
 
 ** Only in the context, when right click on the folder **
+
 4. *useOnlyEnhancedFile* [boolean]
 This is very useful to only use files with an specified filename enhancement. For example. if set to true, the extension will only convert files with the extension `.model.` like in `my_complex_todo.model.dart` and will skip all other files.
 
