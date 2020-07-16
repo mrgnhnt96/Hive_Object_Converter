@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync } from "fs-extra";
+import { lstatSync, readFileSync, mkdir, ensureDir } from "fs-extra";
 import * as vscode from "vscode";
 import { getClasses } from "../utils/dart";
 import { getRootPath } from "../utils/get-root-path";
@@ -9,7 +9,7 @@ import * as _ from "lodash";
 import { readSetting } from "../utils/vscode_easy";
 
 export async function convertToHive(uri: vscode.Uri) {
-  const extendHiveObject: boolean = await readSetting('use_HiveObject') as boolean || true;
+
 
   let hiveObjectDirectory;
   if (_.isNil(_.get(uri, "fsPath")) || !lstatSync(uri.fsPath).isFile) {
@@ -27,8 +27,12 @@ export async function convertToHive(uri: vscode.Uri) {
     root = root.slice(1);
   }
 
-  let folder = await readSetting('folder_of_created_files') as string;
+  let folder = await readSetting('folderDestination') as string;
   let hiveHelperDirectory = root + "/lib/" + folder;
+
+  // create folder if not there
+  await ensureDir(hiveHelperDirectory);
+
   if (_.isNil(hiveHelperDirectory)) {
     vscode.window.showErrorMessage(
       "Was not able to get lib directory, please try again."
@@ -42,11 +46,12 @@ export async function convertToHive(uri: vscode.Uri) {
   await generateHiveHelper(hiveHelperDirectory, hiveObjectDirectory, classes);
   await generateHiveFieldIds(hiveHelperDirectory, classes);
 
+
+
   const res = await updateClass(
     classes,
     hiveObjectDirectory,
-    hiveHelperDirectory,
-    extendHiveObject
+    hiveHelperDirectory
   );
 
   if (res) {

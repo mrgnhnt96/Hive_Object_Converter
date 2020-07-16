@@ -60,9 +60,9 @@
     },
     "configuration": [
       {
-        "title": "Hive object convert Generator configuration",
+        "title": "hive-object-converter",
         "properties": {
-          "hive-object-converter.use_HiveObject": {
+          "hive-object-converter.extendsHiveObject": {
             "type": "boolean",
             "enum": [
               true,
@@ -71,24 +71,34 @@
             "default": true,
             "description": "If true, will extends with the hive object on all generated classes"
           },
-          "hive-object-converter.folder_of_created_files": {
+          "hive-object-converter.hiveObjectImportPath": {
+            "type": "string",
+            "default": "",
+            "description": "Specify the path to your custom hive object in absolute path."
+          },
+          "hive-object-converter.customHiveObjectName": {
+            "type": "string",
+            "default": "HiveObject",
+            "description": "In the HiveObject was extended by another class, and this class should be used instead, specify class name here."
+          },
+          "hive-object-converter.folderDestination": {
             "type": "string",
             "default": "hive_helper",
             "description": "The folder, where to put all the generated files. The root folder is lib. There for it will be /lib/hive_helper/"
           },
-          "hive-object-converter.should_use_model_dots": {
+          "hive-object-converter.useOnlyEnhancedFile": {
             "type": "boolean",
             "enum": [
               true,
               false
             ],
             "default": true,
-            "description": "If true, will only look for extended file names like '.model."
+            "description": "If true, the hive-object-converter will only process files which enhances the file name specified in useEnhancedFileName"
           },
-          "hive-object-converter.should_use_model_dots_name": {
+          "hive-object-converter.useEnhancedFileName": {
             "type": "string",
             "default": ".model.",
-            "description": "If should_use_model_dots is set to `true`, then `.model.` will only be used to convert to hive "
+            "description": "Specify the file extension that the hive-object-converter should look for to convert. Default is .model."
           }
         }
       }

@@ -9,6 +9,8 @@ export function getUpdatedAdapterFile(
   let importString = getPackageImport(importDirectory);
   let adapterString = getAdapter(adapterName);
 
+  console.log(file)
+
   if (file.includes(adapterString)) {
     return file;
   }

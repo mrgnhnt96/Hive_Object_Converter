@@ -24,13 +24,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 
         readdir(uri.fsPath, async (err, files: string[]) => {
-          const shouldInclude = await readSetting('should_use_model_dots') as boolean;
-          const shouldIncludeName = await readSetting('should_use_model_dots_name') as string;
+          const shouldInclude = await readSetting('useOnlyEnhancedFile') as boolean;
+          const shouldIncludeName = await readSetting('useEnhancedFileName') as string;
 
           for (var file of files) {
 
             if (shouldInclude && !file.includes(shouldIncludeName)) {
               vscode.window.showWarningMessage('Skip file: ' + file);
+              continue;
+            }
+
+            // skip!! generated files
+            if (file.includes('.g.')) {
               continue;
             }
 
