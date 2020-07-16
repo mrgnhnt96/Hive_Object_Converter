@@ -9,14 +9,15 @@ export function getUpdatedAdapterFile(
   let importString = getPackageImport(importDirectory);
   let adapterString = getAdapter(adapterName);
 
+  console.log(file)
+
   if (file.includes(adapterString)) {
     return file;
   }
 
   let updatedFile = file.replace(
     "}",
-    `\t${adapterString}
-  }`
+    `\t${adapterString}\n}`
   );
 
   if (!file.includes(importString)) {

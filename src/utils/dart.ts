@@ -105,11 +105,15 @@ export class DartClass {
       }
     });
 
-    this.identifyMultiLineComments();
-    await this.identifyMainConstructor();
-    await this.identifyNamedConstructors();
-    await this.identifyOverrideMethods();
-    await this.identifyOthers();
+    try {
+      this.identifyMultiLineComments();
+      await this.identifyMainConstructor();
+      await this.identifyNamedConstructors();
+      await this.identifyOverrideMethods();
+      await this.identifyOthers();
+    } catch (e) {
+      console.error(e);
+    }
 
     // this.lines.forEach((line, index) => console.log(`line #${index} type=${EntityType[line.entityType]}: ${line.line}`));
   }
@@ -355,18 +359,30 @@ export class DartClass {
     }
   }
 
-  //TODO: IF CONTAINS @HIVE... REMOVE
+
 
   private scanMethod(line: string, lineNum: number): DartEntity {
     let entity = new DartEntity();
+
 
     let result = this.findSequence(line);
     let sequence = result[0];
     let leadingText = result[1];
 
-    const nameParts = leadingText.split(" ");
+
+    let nameParts;
+    // check if Typed <> are included
+    if (leadingText.match(/[<>]/g)) {
+      nameParts = leadingText.split("> ");
+      nameParts[0] += ">"
+    } else {
+      nameParts = leadingText.split(" ");
+    }
+
     let staticKeyword = false;
     let privateVar = false;
+
+
     if (nameParts.length > 0) {
       entity.name = nameParts[nameParts.length - 1];
       if (entity.name.startsWith("_")) {
@@ -376,6 +392,7 @@ export class DartClass {
         staticKeyword = true;
       }
     }
+
     entity.entityType = EntityType.InstanceVariable;
     switch (true) {
       case privateVar && staticKeyword:
@@ -451,11 +468,14 @@ export class DartClass {
     let result = new Array<string>();
 
     let leadingText = "";
-    let openParenCount = 0;
-    let openBraceCount = 0;
-    let openCurlyCount = 0;
+    let openParenCount = 0; // ()
+    let openBraceCount = 0; // []
+    let openCurlyCount = 0; // {}
+    let openTypeParmCount = 0; // <>
+
     for (let i = 0; i < line.length; i++) {
-      let nothin = line[i];
+      // need line[i] to perform loop while searching
+      let nothing = line[i];
 
       if (openParenCount > 0) {
         for (; i < line.length; i++) {
@@ -506,8 +526,31 @@ export class DartClass {
             return [result.join(""), leadingText];
           }
         }
-      } else {
+      } else if (openTypeParmCount > 0) {
+        for (; i < line.length; i++) {
+          switch (line[i]) {
+            case "<":
+              openTypeParmCount++;
+              break;
+            case ">":
+              openTypeParmCount--;
+              break;
+          }
+          if (openTypeParmCount === 0) {
+            result.push(line[i]);
+
+            return [';', line.slice(0, line.length - 1)];
+          }
+        }
+      }
+
+      else {
         switch (line[i]) {
+          case "<":
+            openTypeParmCount++;
+            // will skip till last, that it is
+            /// TODO: will this actually work?? or breaks methods call with <T>
+            break;
           case "(":
             openParenCount++;
             result.push(line[i]);
@@ -729,6 +772,8 @@ const findOpenCurlyOffset = (buf: string, startOffset: number) => {
 export const getClasses = async (fileContents: string) => {
   let classes = new Array<DartClass>();
   const buf = fileContents;
+
+
   while (true) {
     let mm = matchClassRE.exec(buf);
     if (!mm) {
@@ -754,6 +799,7 @@ export const getClasses = async (fileContents: string) => {
       );
       return classes;
     }
+
     let dartClass = new DartClass(
       fileContents,
       className,
@@ -761,9 +807,12 @@ export const getClasses = async (fileContents: string) => {
       openCurlyOffset,
       closeCurlyOffset
     );
-    await dartClass.findFeatures(
+
+    const err = await dartClass.findFeatures(
       buf.substring(openCurlyOffset, closeCurlyOffset + 1)
     );
+
+
     classes.push(dartClass);
   }
   return classes;

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs-extra";
 import { getRegisterAdaptersTemplate } from "../templates/register-adapters";
 import { setFileData } from "../utils/set-file-data";
 import { getUpdatedAdapterFile } from "../utils/get-updated-adapter-file";
