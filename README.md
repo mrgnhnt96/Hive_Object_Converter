@@ -86,5 +86,5 @@ Specify the file enhancement. It defaults to `.model.`. If the setting `useOnlyE
 
 
 
-## Fixes:s
+## Fixes:
 Path related issues on windows machines, seems to be resolved.

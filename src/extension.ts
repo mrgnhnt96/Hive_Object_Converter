@@ -39,10 +39,10 @@ export function activate(context: vscode.ExtensionContext) {
               continue;
             }
 
-            const p = path.normalize(uri.fsPath + '\\' + file);
-            const uu = vscode.Uri.file(p);
+            const p = path.join(uri.fsPath, file);
+            const u = vscode.Uri.file(p);
 
-            await convertToHive(uu);
+            await convertToHive(u);
 
           }
 
