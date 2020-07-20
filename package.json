@@ -75,7 +75,7 @@
     "change-case": "^4.1.1",
     "child_process": "^1.0.2",
     "fs": "0.0.1-security",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "mkdir": "0.0.2"
   }
 }
