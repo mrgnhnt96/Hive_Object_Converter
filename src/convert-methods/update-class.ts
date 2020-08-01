@@ -130,7 +130,8 @@ export async function updateClass(
       if (isInstance || hasOverride) {
         let lineSplit = line.line.split(" ");
         let fieldName = lineSplit[lineSplit.length - 1];
-        // why do i need to trim it? => length does not return only the visible char, also \n!
+        
+        // Trim: length does not return only the visible char, also \n!
         let length = fieldName.trim().length - 1;
 
 
