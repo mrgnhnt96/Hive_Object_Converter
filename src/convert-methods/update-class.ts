@@ -31,10 +31,9 @@ export async function updateClass(
     let classSnakeCasedName = changeCase.snakeCase(hiveClass.className);
     let classCamelCasedName = changeCase.camelCase(hiveClass.className);
 
-    if (
-      originalFile.indexOf(hiveImport) < 0 &&
-      fileContents.indexOf(hiveImport) < 0 &&
-      imports.indexOf(hiveImport) < 0
+    if (originalFile.indexOf(hiveImport) < 0
+      && fileContents.indexOf(hiveImport) < 0
+      && imports.indexOf(hiveImport) < 0
     ) {
       imports += hiveImport;
     }
@@ -96,19 +95,17 @@ export async function updateClass(
     }
 
     // adding type import
-    if (
-      originalFile.indexOf(hiveTypesImportString) < 0 &&
-      fileContents.indexOf(hiveTypesImportString) < 0 &&
-      imports.indexOf(hiveTypesImportString) < 0
+    if (originalFile.indexOf(hiveTypesImportString) < 0
+      && fileContents.indexOf(hiveTypesImportString) < 0
+      && imports.indexOf(hiveTypesImportString) < 0
     ) {
       imports += hiveTypesImportString;
     }
 
     //adding adapter import
-    if (
-      originalFile.indexOf(hiveAdapterImportString) < 0 &&
-      fileContents.indexOf(hiveAdapterImportString) < 0 &&
-      imports.indexOf(hiveAdapterImportString) < 0
+    if (originalFile.indexOf(hiveAdapterImportString) < 0
+      && fileContents.indexOf(hiveAdapterImportString) < 0
+      && imports.indexOf(hiveAdapterImportString) < 0
     ) {
       imports += hiveAdapterImportString;
     }
@@ -130,7 +127,7 @@ export async function updateClass(
       if (isInstance || hasOverride) {
         let lineSplit = line.line.split(" ");
         let fieldName = lineSplit[lineSplit.length - 1];
-        
+
         // Trim: length does not return only the visible char, also \n!
         let length = fieldName.trim().length - 1;
 
@@ -162,17 +159,36 @@ export async function updateClass(
     const hiveObjectName = readSetting('customHiveObjectName') as string;
     const customImport = readSetting('hiveObjectImportPath') as string;
 
+    let roundBrackets = 0;
 
     beginningStringSplit = beginningStringSplit.filter((l) => {
 
       if (l === "") return false;
       if (l.includes(hivePartString)) return false;
-      if (l.includes("@Hive")) return false;
       if (l.includes(customImport)) return false;
       if (l.includes(hiveObjectName)) return false;
+
+      // consider brackets
+      if (l.includes("@Hive")) {
+        if (l.includes('(')) roundBrackets += 1;
+        if (l.includes(')')) roundBrackets -= 1;
+        return false;
+      }
+
+      // shoudl only consider if it was a hive type, that open and closed brackets
+      if (roundBrackets > 0 && l.includes(')')) {
+        roundBrackets -= 1;
+        return false;
+      }
+
+      // if bracket is still not closed...
+      if (roundBrackets != 0) return false;
+
       return true;
-    }
-    );
+    });
+
+    let atAnnotation = beginningStringSplit.filter((e) => e.includes('@')).join('\n') + '\n';
+    beginningStringSplit = beginningStringSplit.filter((e) => !e.includes('@'));
 
     const extendsHiveObject = readSetting('extendsHiveObject') as boolean;
     var extendClass = "";
@@ -198,6 +214,7 @@ export async function updateClass(
     if (i > 0) {
       fileContents +=
         "\n\n" +
+        atAnnotation +
         hiveTypeString +
         classString +
         convertedClassString +
@@ -208,6 +225,7 @@ export async function updateClass(
         "\n\n" +
         hivePartString +
         "\n\n" +
+        atAnnotation +
         hiveTypeString +
         classString +
         convertedClassString;
