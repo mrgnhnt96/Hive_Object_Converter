@@ -121,7 +121,13 @@ export async function updateClass(
       const hiveFieldImport = `${hiveHelperDirectory}/fields/${classSnakeCasedName}_fields.dart`;
       const hiveFieldImportString = `${getPackageImport(hiveFieldImport)}\n`;
 
-      if (line.entityType === EntityType.InstanceVariable) {
+      const isInstance = line.entityType === EntityType.InstanceVariable;
+
+      // test on override
+      const hasOverride = (line.entityType === EntityType.OverrideMethod && !line.line.includes('@override'));
+
+
+      if (isInstance || hasOverride) {
         let lineSplit = line.line.split(" ");
         let fieldName = lineSplit[lineSplit.length - 1];
         // why do i need to trim it? => length does not return only the visible char, also \n!
@@ -129,9 +135,11 @@ export async function updateClass(
 
 
         let fieldName_ = fieldName.slice(0, length);
-        hiveFieldString = `\t@HiveField(${hiveClass.className}Fields.${fieldName_})\n`;
+        hiveFieldString = `\t@HiveField(${hiveClass.className}Fields.${fieldName_})`;
+        convertedClass.push(hiveFieldString + '\n' + line.line);
+      } else {
+        convertedClass.push(line.line);
       }
-      convertedClass.push(`${hiveFieldString}${line.line}`);
 
       if (
         originalFile.indexOf(hiveFieldImportString) < 0 &&
