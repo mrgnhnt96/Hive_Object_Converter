@@ -1,5 +1,5 @@
 import { DartClass, getClasses } from "../utils/dart";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs-extra";
 import { createDirectory } from "../utils/create-directory";
 import { getHiveFieldsTemplate } from "../templates/hive-fields";
 import { setFileData } from "../utils/set-file-data";

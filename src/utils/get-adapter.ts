@@ -1,3 +1,3 @@
 export function getAdapter(className: string): string {
-  return `Hive.registerAdapter(${className}Adapter());`;
+  return `Hive.registerAdapter(${className}Adapter());`.trim();
 }

@@ -6,13 +6,13 @@ export function getRegisterAdaptersTemplate(
   adapterName: string
 ): string {
   let packageImport = getPackageImport(importDirectory);
-  let adapter = getAdapter(adapterName);
+  let adapter = getAdapter(adapterName).trim();
 
   return `import 'package:hive/hive.dart';
 ${packageImport}
 
 void registerAdapters() {
-  ${adapter}
+\t${adapter}
 }
 `;
 }

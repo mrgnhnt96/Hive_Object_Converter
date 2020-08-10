@@ -17,22 +17,33 @@
   ],
   "activationEvents": [
     "onCommand:hive-object-converter.convert_to_hive",
-    "onCommand:hive-object-converter.get_generated_files"
+    "onCommand:hive-object-converter.get_generated_files",
+    "onCommand:hive-object-converter.convert_to_hive_models"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "hive-object-converter.convert_to_hive_models",
+        "title": "[Hive] Convert *.model.dart in folder to Hive"
+      },
+      {
         "command": "hive-object-converter.convert_to_hive",
-        "title": "Convert To Hive"
+        "title": "[Hive] Convert To Hive"
       },
       {
         "command": "hive-object-converter.get_generated_files",
-        "title": "Get Hive Generated Files"
+        "title": "[Hive] Get Hive Generated Files"
       }
     ],
     "menus": {
       "explorer/context": [
+        {
+          "command": "hive-object-converter.convert_to_hive_models",
+          "group": "aconvert_to_hive@1",
+          "when": "explorerResourceIsFolder",
+          "alt": "alt+z"
+        },
         {
           "command": "hive-object-converter.convert_to_hive",
           "group": "aconvert_to_hive@1",
@@ -46,7 +57,52 @@
           "alt": "alt+z"
         }
       ]
-    }
+    },
+    "configuration": [
+      {
+        "title": "hive-object-converter",
+        "properties": {
+          "hive-object-converter.extendsHiveObject": {
+            "type": "boolean",
+            "enum": [
+              true,
+              false
+            ],
+            "default": true,
+            "description": "If true, will extends with the hive object on all generated classes"
+          },
+          "hive-object-converter.hiveObjectImportPath": {
+            "type": "string",
+            "default": "",
+            "description": "Specify the path to your custom hive object in absolute path."
+          },
+          "hive-object-converter.customHiveObjectName": {
+            "type": "string",
+            "default": "HiveObject",
+            "description": "In the HiveObject was extended by another class, and this class should be used instead, specify class name here."
+          },
+          "hive-object-converter.folderDestination": {
+            "type": "string",
+            "default": "hive_helper",
+            "description": "The folder, where to put all the generated files. The root folder is lib. There for it will be /lib/hive_helper/"
+          },
+          "hive-object-converter.useOnlyEnhancedFile": {
+            "type": "boolean",
+            "enum": [
+              true,
+              false
+            ],
+            "default": true,
+            "description": "If true, the hive-object-converter will only process files which enhances the file name specified in useEnhancedFileName"
+          },
+          "hive-object-converter.useEnhancedFileName": {
+            "type": "string",
+            "default": ".model.",
+            "description": "Specify the file extension that the hive-object-converter should look for to convert. Default is .model."
+          }
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -57,25 +113,27 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^7.1.1",
-    "@types/lodash": "^4.14.150",
-    "@types/mkdirp": "^1.0.0",
+    "@types/glob": "^7.1.3",
+    "@types/lodash": "^4.14.157",
+    "@types/mkdirp": "^1.0.1",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^13.11.0",
-    "@types/vscode": "^1.44.0",
-    "@typescript-eslint/eslint-plugin": "^2.26.0",
-    "@typescript-eslint/parser": "^2.26.0",
-    "eslint": "^6.8.0",
+    "@types/node": "^14.0.23",
+    "@types/vscode": "^1.46.0",
+    "@typescript-eslint/eslint-plugin": "^3.6.0",
+    "@typescript-eslint/parser": "^3.6.0",
+    "eslint": "^7.4.0",
     "glob": "^7.1.6",
-    "mocha": "^7.1.1",
-    "typescript": "^3.8.3",
-    "vscode-test": "^1.3.0"
+    "mocha": "^8.0.1",
+    "typescript": "^3.9.6",
+    "vscode-test": "^1.4.0"
   },
   "dependencies": {
+    "@types/fs-extra": "^9.0.1",
     "change-case": "^4.1.1",
     "child_process": "^1.0.2",
-    "fs": "0.0.1-security",
-    "lodash": "^4.17.19",
-    "mkdir": "0.0.2"
+    "fs-extra": "^9.0.1",
+    "lodash": "^4.17.17",
+    "mkdir": "0.0.2",
+    "path": "^0.12.7"
   }
 }
