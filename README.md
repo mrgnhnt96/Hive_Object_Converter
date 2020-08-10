@@ -43,7 +43,7 @@ class MyComplexTodo extends HiveObject {
 
 ## How to use it
 
-This extension allows right click on a dart file and then choose between two options.
+This extension allows right click on a dart file or a folder containing dart files and then choose between three options.
 1. `[Hive] Convert To Hive`
 2. `[Hive] Get Hive Generated Files`
 3. `[Hive] Convert *.model.dart in folder to Hive`
@@ -66,19 +66,19 @@ The extension will create subfolder `hive_helper` to store all the hive helpers:
 There are several settings, that can be modified:
 
 1. *useExtendsHiveObject* [boolean]:
-If `MyComplexTodo` class should extends the HiveObject or not.
+If `MyClassName` class should extends the HiveObject or not.
 
 2. *hiveObjectImportPath* [string]:
-The import path of the HiveObject. Defaults to `import 'package:hive/hive.dart';`. Specify different location, if the `MyComplexTodo` should extends a modified version of the HiveObject.
+The import path of the HiveObject. Defaults to `import 'package:hive/hive.dart';`. Specify different location, if the `MyClassName` should extend a modified version of the HiveObject.
 
 3. *customHiveObjectName* [string]:
 Specify the name of the modified version of the HiveObject. It defaults to HiveObject
 
 
-** Only in the context, when right click on the folder **
+** Only in the context: when right click on the folder **
 
 4. *useOnlyEnhancedFile* [boolean]
-This is very useful to only use files with an specified filename enhancement. For example. if set to true, the extension will only convert files with the extension `.model.` like in `my_complex_todo.model.dart` and will skip all other files.
+This is very useful to only use files with an specified filename enhancement. For example. if set to true, the extension will only convert files with the extension `.model.` like in `my_class_name.model.dart` and will skip all other files.
 
 5. *useEnhancedFileName* [string]
 Specify the file enhancement. It defaults to `.model.`. If the setting `useOnlyEnhancedFile` is set to true, the file enhancement, that is specified here, will be used by the extension.
