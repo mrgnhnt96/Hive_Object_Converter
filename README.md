@@ -14,7 +14,8 @@ class MyComplexTodo {
   Map<String, dynamic> field2;
 }
 ```
-will be converted to 
+
+will be converted to
 
 ```dart
 import 'package:hive/hive.dart';
@@ -44,47 +45,43 @@ class MyComplexTodo extends HiveObject {
 ## How to use it
 
 This extension allows right click on a dart file or a folder containing dart files and then choose between three options.
+
 1. `[Hive] Convert To Hive`
 2. `[Hive] Get Hive Generated Files`
 3. `[Hive] Convert *.model.dart in folder to Hive`
 
-The 1. will convert the class like in the example above. 
+The 1. will convert the class like in the example above.
 The 2. command will start the build run command, to generate the `*.g.dart` file.
 The 3. command will appear, when right click on a folder.
 
+The extension will create subfolder `hive_helper` to store all the hive helpers:
 
-
-The extension will create subfolder `hive_helper` to store all the hive helpers: 
 1. Register the hive adapter
 2. Specify the hive type of the annotated class
 3. Specify the hive adapter name
 4. creates a folder for the fields of the annotated class.
 
-
-
 ## Settings
+
 There are several settings, that can be modified:
 
-1. *useExtendsHiveObject* [boolean]:
-If `MyClassName` class should extends the HiveObject or not.
+1. _useExtendsHiveObject_ [boolean]:
+   If `MyComplexTodo` class should extends the HiveObject or not.
 
-2. *hiveObjectImportPath* [string]:
-The import path of the HiveObject. Defaults to `import 'package:hive/hive.dart';`. Specify different location, if the `MyClassName` should extend a modified version of the HiveObject.
+2. _hiveObjectImportPath_ [string]:
+   The import path of the HiveObject. Defaults to `import 'package:hive/hive.dart';`. Specify different location, if the `MyComplexTodo` should extend a modified version of the HiveObject.
 
-3. *customHiveObjectName* [string]:
-Specify the name of the modified version of the HiveObject. It defaults to HiveObject
-
+3. _customHiveObjectName_ [string]:
+   Specify the name of the modified version of the HiveObject. It defaults to HiveObject
 
 ** Only in the context: when right click on the folder **
 
-4. *useOnlyEnhancedFile* [boolean]
-This is very useful to only use files with an specified filename enhancement. For example. if set to true, the extension will only convert files with the extension `.model.` like in `my_class_name.model.dart` and will skip all other files.
+4. _useOnlyEnhancedFile_ [boolean]
+   This is very useful to only use files with an specified filename enhancement. For example. if set to true, the extension will only convert files with the extension `.model.` like in `my_complex_todo.model.dart` and will skip all other files.
 
-5. *useEnhancedFileName* [string]
-Specify the file enhancement. It defaults to `.model.`. If the setting `useOnlyEnhancedFile` is set to true, the file enhancement, that is specified here, will be used by the extension.
-
-
-
+5. _useEnhancedFileName_ [string]
+   Specify the file enhancement. It defaults to `.model.`. If the setting `useOnlyEnhancedFile` is set to true, the file enhancement, that is specified here, will be used by the extension.
 
 ## Fixes:
+
 Path related issues on windows machines, seems to be resolved.
